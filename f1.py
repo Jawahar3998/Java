@@ -1,19 +1,24 @@
 from bs4 import BeautifulSoup
-import urllib3
+import requests, re, urllib
 
-html = urllib3.PoolManager()
+
 visitedlinks = set()
 needtocrawllinks = []
 
-seedurl = html.request('GET', 'https://www.crummy.com/software/BeautifulSoup/bs4/doc/')
-
+#arg stringurl in string and returns a html document in string format
 def gethtmlobj(stringurl):
-    htmlobj = html.request('GET', stringurl)
-    if(htmlobj.status != 200):
-      return htmlobj.data
+ try:
+      htmlobj = requests.get(stringurl)
+      if (htmlobj.status_code == requests.codes.ok):
+          return htmlobj.text
 
-def getsoupobj(htmlobj):
-    soupobj = BeautifulSoup(htmlobj, 'html.parser')
+ except requests.RequestException:
+        print('dont do anything')
+
+
+#arg htmlobj in html data and return soup object
+def getsoupobj(htmldata):
+    soupobj = BeautifulSoup(htmldata, 'html.parser')
     return soupobj
 
 def bfsonsoupobj(soupobj):
@@ -25,13 +30,20 @@ def bfsonsoupobj(soupobj):
 
 def crawling(seed):
     htmlobj = gethtmlobj(seed)
-    soupobj = getsoupobj(htmlobj)
-    bfsonsoupobj(soupobj)
-    while(needtocrawllinks.isEmpty() is not True):
-        urlstring = needtocrawllinks.popleft()
+    if(htmlobj is not None):
+      soupobj = getsoupobj(htmlobj)
+      bfsonsoupobj(soupobj)
+    while(not needtocrawllinks is False):
+        urlstring = needtocrawllinks.pop(0)
         if(urlstring in visitedlinks):
            continue
         htmlobj = gethtmlobj(urlstring)
-        soupobj = getsoupobj(htmlobj)
-        bfsonsoupobj(soupobj)
+        if (htmlobj is not None):
+         soupobj = getsoupobj(htmlobj)
+         bfsonsoupobj(soupobj)
+         visitedlinks.add(urlstring)
+
+seedurl = 'https://www.crummy.com/software/BeautifulSoup/bs4/doc/'
+crawling(seedurl)
+
 
